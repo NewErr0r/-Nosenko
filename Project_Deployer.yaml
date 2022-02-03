@@ -1,0 +1,105 @@
+---
+- name: Basic configuration of virtual machines
+  hosts: linux
+  gather_facts: no
+  become: True 
+
+  tasks: 
+    - name: Update package lists and Installation "Curl"
+      apt: 
+        name: curl
+        state: latest
+        update_cache: yes
+
+    - name: Active ufw
+      ufw: state=enabled
+      become: true  
+
+    - name: ufw allow ports tcp 22
+      ufw: rule=allow port=22 proto=tcp 
+
+    - name: ufw allow ports tcp 80
+      ufw: rule=allow port=80 proto=tcp 
+
+    - name: ufw allow ports tcp 8080
+      ufw: rule=allow port=8080 proto=tcp 
+
+    - name: ufw allow ports tcp 1834
+      ufw: rule=allow port=1834 proto=tcp 
+
+    - name: Set firewall default policy
+      ufw: policy=reject
+      become: true
+
+    - name: Creating a user to access virtual machines
+      ansible.builtin.user:
+        name: User
+        comment: User to Access VM
+
+    - name: Add Docker GPG apt Key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker Repository
+      apt_repository:
+        repo: deb https://download.docker.com/linux/ubuntu bionic stable
+        state: present
+
+    - name: Update apt and install "docker-ce"
+      apt: 
+        name: docker-ce
+        state: latest
+        update_cache: yes
+
+    - name: Copy and Execute the script
+      script: /wsr-skillcloud/docker-compose.sh
+
+    - name: Creating directory "skillcloud-nginx"
+      file: 
+        state: directory
+        path: /skillcloud-nginx
+
+    - name: Copying files needed to build images "index.html"
+      ansible.builtin.copy:
+        src: /wsr-skillcloud/index.html
+        dest: /skillcloud-nginx
+
+    - name: Copying files needed to build images "nginx.conf"
+      ansible.builtin.copy:
+        src: /wsr-skillcloud/nginx.conf
+        dest: /skillcloud-nginx
+
+    - name: Copying files needed to build images "Dockerfile-site"
+      ansible.builtin.copy:
+        src: /wsr-skillcloud/Dockerfile-site
+        dest: /skillcloud-nginx
+
+    - name: Copying files needed to build images "Dockerfile-balance"
+      ansible.builtin.copy:
+        src: /wsr-skillcloud/Dockerfile-balance
+        dest: /skillcloud-nginx
+
+    - name: Copying files needed to build images "docker-compose.yml"
+      ansible.builtin.copy:
+        src: /wsr-skillcloud/docker-compose.yml
+        dest: /skillcloud-nginx
+
+    - name: Copying files needed to build images "docker-compose.sh"
+      ansible.builtin.copy:
+        src: /wsr-skillcloud/docker-compose.sh
+        dest: /skillcloud-nginx
+
+    - name: Restart SSH
+      service:
+        name: ssh
+        state: restarted
+
+    - name: Restart UFW
+      service:
+        name: ufw
+        state: restarted
+
+    - name: Wait for server to restart
+      reboot:
+        reboot_timeout: 3600

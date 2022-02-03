@@ -1,0 +1,9 @@
+[linux]
+project_1 ansible_host=172.20.6.67
+project_2 ansible_host=172.20.6.75
+project_3 ansible_host=172.20.6.76
+
+[linux:vars]
+ansible_ssh_user=root
+ansible_ssh_pass=toortoor
+ansible_sudo_pass=toortoor
